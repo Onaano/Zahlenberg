@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Zahlenberg — Größer · kleiner · gleich bis 100 | Förderfreude Games</title>
+<style>
+  :root{
+    --sky-top:#cfe8f5;
+    --sky-bottom:#fef6e4;
+    --mtn-far:#b9c6d6;
+    --mtn-near:#8d7a68;
+    --mtn-near-dark:#6e5c4c;
+    --snow:#ffffff;
+    --pine:#3d6b4f;
+    --pine-dark:#2a4d38;
+    --rock:#a89478;
+    --ink:#3a3226;
+    --muted:#8a7f6f;
+    --panel:#fffdf8;
+    --panel-edge:rgba(60,45,20,.14);
+    --flag:#d8492f;
+    --blue:#3a7ca5;
+    --blue-tint:#e7f2f7;
+    --gold:#e8a33d;
+    --alert:#d8492f;
+    --font-display: ui-rounded, 'Segoe UI Rounded', 'SF Pro Rounded', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; padding:0; height:100%; overscroll-behavior:none; touch-action:none; }
+  body{
+    font-family:var(--font-body);
+    background:linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 100%);
+    color:var(--ink);
+    height:100vh; height:100dvh;
+    overflow:hidden;
+    display:flex; flex-direction:column;
+    user-select:none; -webkit-user-select:none;
+  }
+  button{ font-family:inherit; cursor:pointer; border:none; background:none; padding:0; }
+
+  header{ flex-shrink:0; display:flex; align-items:center; justify-content:space-between; padding:1.6vh 3vw 0.6vh; }
+  .brand{ font-family:var(--font-display); font-weight:800; font-size:clamp(14px,2vw,19px); color:var(--mtn-near-dark); display:flex; align-items:center; gap:1.4vw; }
+  .sound-btn{
+    width:clamp(32px,4.2vw,42px); height:clamp(32px,4.2vw,42px);
+    border-radius:50%; background:rgba(255,253,248,.85); border:1.6px solid var(--panel-edge);
+    display:flex; align-items:center; justify-content:center; font-size:clamp(14px,1.8vw,18px);
+    transition:transform .1s ease;
+  }
+  .sound-btn:active{ transform:scale(.9); }
+
+  .screen{ flex:1; min-height:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .screen[hidden]{ display:none; }
+
+  /* ---------- Start ---------- */
+  #screen-start{ gap:1.8vh; padding:1.5vh 4vw; text-align:center; width:100%; position:relative; overflow:hidden; }
+  .title-big{ font-family:var(--font-display); font-weight:800; font-size:clamp(30px,6vw,58px); color:var(--mtn-near-dark); margin:0; text-shadow:0 3px 0 rgba(255,255,255,.5); }
+  .subtitle-big{ font-family:var(--font-display); font-weight:700; font-size:clamp(14px,2.2vw,20px); color:var(--blue); margin:0; }
+  .start-scene{ width:min(560px,80vw); height:clamp(120px,22vh,220px); position:relative; margin-top:.5vh; pointer-events:none; overflow:visible; }
+  .start-btn{
+    font-family:var(--font-display); font-weight:800; font-size:clamp(20px,3.4vw,30px);
+    color:#fff; background:var(--pine); border-radius:999px; padding:2vh 9vw;
+    box-shadow:0 8px 0 rgba(42,77,56,.35), 0 14px 26px -14px rgba(42,77,56,.5);
+    transition:transform .1s ease;
+    margin-top:1vh;
+  }
+  .start-btn:active{ transform:translateY(5px); box-shadow:0 3px 0 rgba(42,77,56,.35); }
+  .brand-footer{ font-size:clamp(10px,1.3vw,12px); color:var(--muted); font-weight:700; margin-top:.5vh; }
+
+  /* ---------- Spiel ---------- */
+  #screen-game{ width:100%; gap:0.6vh; padding:0 3vw; }
+  .progress-row{ display:flex; align-items:center; gap:2vw; }
+  .progress-num{ font-family:var(--font-display); font-weight:800; font-size:clamp(14px,2vw,19px); color:var(--mtn-near-dark); display:flex; align-items:center; gap:.6vw; }
+
+  .task-wrap{ flex:1; min-height:0; width:100%; display:flex; align-items:stretch; justify-content:center; gap:1.6vw; padding:0.4vh 0; }
+
+  .progress-mountain{
+    position:relative; overflow:hidden; border-radius:22px;
+    width:clamp(52px,11vw,92px); flex-shrink:0; height:100%;
+    background:linear-gradient(180deg, #cfe8f5 0%, #e7f3e0 60%, #d9ebc7 100%);
+    box-shadow:0 8px 22px -12px rgba(60,45,20,.3);
+  }
+  .progress-mtn-bg{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+  .summit-flag{
+    position:absolute; top:1%; left:50%; transform:translateX(-50%);
+    font-size:clamp(14px,2.4vw,20px); z-index:4; pointer-events:none;
+  }
+  .progress-stations{ position:absolute; inset:0; pointer-events:none; }
+  .progress-station-dot{
+    position:absolute; left:50%; transform:translate(-50%,50%);
+    width:clamp(6px,1.3vw,11px); height:clamp(6px,1.3vw,11px); border-radius:50%;
+    background:rgba(255,255,255,.55); border:1.4px solid rgba(255,255,255,.85);
+  }
+  .progress-station-dot.done{ background:var(--gold); border-color:#fff; }
+
+  .task-stage{
+    position:relative; overflow:hidden; border-radius:26px; flex:1; min-width:0; height:100%;
+    background:linear-gradient(180deg, #cfe8f5 0%, #e7f3e0 55%, #d9ebc7 100%);
+    box-shadow:0 10px 30px -14px rgba(60,45,20,.35);
+  }
+  .cloud{ position:absolute; background:#fff; border-radius:50%; opacity:.85; pointer-events:none; }
+
+  /* ---------- Sortier-Aufgabe ---------- */
+  #task-sort[hidden]{ display:none; }
+  #task-sort{ position:absolute; inset:0; }
+  .direction-icon{
+    position:absolute; left:50%; top:3%; transform:translateX(-50%);
+    display:flex; align-items:flex-end; gap:1.4vw; z-index:6; pointer-events:none;
+    background:var(--panel); border:2.6px solid var(--blue); border-radius:22px;
+    padding:1.2vh 3.2vw;
+    box-shadow:0 8px 18px -10px rgba(60,45,20,.4);
+  }
+  .dir-mtn{ display:block; align-self:flex-end; }
+  .dir-mtn.s1{ width:clamp(13px,2.1vw,19px); height:clamp(13px,2.1vw,19px); }
+  .dir-mtn.s2{ width:clamp(19px,3vw,27px); height:clamp(19px,3vw,27px); }
+  .dir-mtn.s3{ width:clamp(25px,4vw,36px); height:clamp(25px,4vw,36px); }
+  .dir-mtn.s4{ width:clamp(31px,5vw,45px); height:clamp(31px,5vw,45px); }
+  .dir-arrow-big{ font-size:clamp(20px,3.4vw,30px); color:var(--blue); font-weight:800; align-self:center; margin-left:.4vw; }
+
+  .platform{
+    position:absolute; transform:translate(-50%,0);
+    width:clamp(64px,11vw,100px); pointer-events:none;
+  }
+  .platform-ledge{
+    width:100%; height:clamp(10px,1.6vh,16px);
+    background:linear-gradient(180deg, var(--rock), var(--mtn-near-dark));
+    border-radius:6px;
+    box-shadow:0 4px 8px rgba(60,45,20,.25);
+  }
+  .drop-zone{
+    position:absolute; left:50%; bottom:100%; transform:translateX(-50%);
+    width:clamp(58px,10vw,92px); height:clamp(58px,10vw,92px);
+    border:3px dashed rgba(60,45,20,.28); border-radius:14px;
+    margin-bottom:2px; pointer-events:auto;
+  }
+  .drop-zone.filled{ border-style:solid; border-color:var(--pine); background:rgba(61,107,79,.08); }
+  .drop-zone.invalid-flash{ animation:zoneFlash .4s ease; }
+  @keyframes zoneFlash{ 0%,100%{ border-color:rgba(60,45,20,.28); } 50%{ border-color:var(--alert); } }
+
+  .tray{
+    position:absolute; left:0; right:0; bottom:2%;
+    display:flex; justify-content:center; gap:3.4vw;
+    pointer-events:none;
+  }
+  .tray-zone{
+    pointer-events:auto;
+    width:clamp(58px,10vw,92px); height:clamp(58px,10vw,92px);
+    border-radius:14px;
+  }
+
+  .num-card{
+    position:absolute; width:clamp(58px,10vw,92px); height:clamp(58px,10vw,92px);
+    background:var(--panel); border:2.4px solid var(--panel-edge); border-radius:14px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-display); font-weight:800; font-size:clamp(20px,3.4vw,30px);
+    color:var(--ink); box-shadow:0 4px 10px -4px rgba(60,45,20,.4);
+    touch-action:none; cursor:grab;
+    transition:left .35s cubic-bezier(.3,.7,.3,1.1), top .35s cubic-bezier(.3,.7,.3,1.1), box-shadow .15s ease;
+    z-index:3;
+  }
+  .num-card.dragging{ transition:none; cursor:grabbing; z-index:20; box-shadow:0 14px 24px -8px rgba(60,45,20,.5); transform:scale(1.08); }
+  .num-card.wrong{ animation:cardShake .4s ease; border-color:var(--alert); }
+  @keyframes cardShake{
+    0%,100%{ transform:translateX(0) rotate(0); }
+    20%{ transform:translateX(-6px) rotate(-4deg); }
+    40%{ transform:translateX(5px) rotate(4deg); }
+    60%{ transform:translateX(-4px) rotate(-3deg); }
+    80%{ transform:translateX(3px) rotate(3deg); }
+  }
+  .num-card.correct-pulse{ animation:cardPulse .5s ease; border-color:var(--pine); }
+  @keyframes cardPulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.12); } }
+
+  /* ---------- Vergleichs-Aufgabe ---------- */
+  #task-compare[hidden]{ display:none; }
+  #task-compare{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; gap:3vw; }
+  .peak{ display:flex; flex-direction:column; align-items:center; gap:1.4vh; }
+  .peak-shape{ width:clamp(90px,15vw,150px); height:clamp(80px,14vh,130px); position:relative; }
+  .peak-shape svg{ width:100%; height:100%; display:block; overflow:visible; }
+  .flag-num{
+    font-family:var(--font-display); font-weight:800; font-size:clamp(28px,5vw,46px);
+    color:var(--ink); background:var(--panel); border:2.6px solid var(--panel-edge);
+    border-radius:16px; padding:.8vh 3vw;
+    box-shadow:0 6px 14px -6px rgba(60,45,20,.35);
+  }
+  .compare-symbols{ display:flex; flex-direction:column; gap:1.6vh; }
+  .symbol-btn{
+    width:clamp(56px,9vw,84px); height:clamp(56px,9vw,84px);
+    border-radius:18px; background:var(--panel); border:2.6px solid var(--panel-edge);
+    font-family:var(--font-display); font-weight:800; font-size:clamp(26px,4.6vw,40px);
+    color:var(--blue); display:flex; align-items:center; justify-content:center;
+    box-shadow:0 4px 10px -4px rgba(60,45,20,.3);
+    transition:transform .1s ease;
+  }
+  .symbol-btn:active{ transform:scale(.92); }
+  .symbol-btn.wrong{ animation:cardShake .4s ease; border-color:var(--alert); color:var(--alert); }
+  .symbol-btn.correct-pulse{ animation:cardPulse .5s ease; border-color:var(--pine); background:var(--blue-tint); }
+
+  .climber{
+    position:absolute; left:50%; transform:translateX(-50%);
+    width:clamp(30px,7vw,52px); height:clamp(30px,7vw,52px);
+    z-index:8; pointer-events:none;
+    transition:bottom .6s cubic-bezier(.3,.6,.3,1.05);
+  }
+  .climber-inner{ width:100%; height:100%; animation:climberBob 2.2s ease-in-out infinite; }
+  .climber-inner svg{ width:100%; height:100%; display:block; overflow:visible; }
+  @keyframes climberBob{ 0%,100%{ margin-top:0; } 50%{ margin-top:-4%; } }
+  .climber.cheer .climber-inner{ animation:climberCheer .5s ease; }
+  @keyframes climberCheer{ 0%,100%{ transform:rotate(0); } 30%{ transform:rotate(-8deg) scale(1.1); } 60%{ transform:rotate(8deg) scale(1.1); } }
+
+  .event-banner{
+    position:absolute; left:50%; top:8%; transform:translate(-50%,-14px);
+    background:var(--panel); border:2.4px solid var(--panel-edge); border-radius:16px;
+    padding:1.2vh 5vw;
+    font-family:var(--font-display); font-weight:800; font-size:clamp(15px,2.4vw,20px);
+    color:var(--ink); text-align:center; white-space:nowrap;
+    box-shadow:0 10px 24px -12px rgba(40,30,10,.4);
+    opacity:0; z-index:9; pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease;
+  }
+  .event-banner.show{ opacity:1; transform:translate(-50%,0); }
+
+  /* ---------- Ende ---------- */
+  #screen-end{ gap:2vh; text-align:center; padding:2vh 4vw; }
+  .end-emoji{ font-size:clamp(40px,7vw,64px); }
+  .end-title{ font-family:var(--font-display); font-weight:800; font-size:clamp(24px,4.4vw,38px); margin:0; color:var(--mtn-near-dark); }
+  .end-sub{ font-family:var(--font-display); font-weight:700; font-size:clamp(15px,2.2vw,20px); color:var(--blue); margin:0; }
+  .end-actions{ display:flex; gap:3vw; margin-top:1vh; flex-wrap:wrap; justify-content:center; }
+  .btn-primary{
+    font-family:var(--font-display); font-weight:800; font-size:clamp(14px,2vw,17px);
+    color:#fff; background:var(--pine); border-radius:999px; padding:1.8vh 5.5vw;
+    box-shadow:0 8px 18px -8px rgba(42,77,56,.5); transition:transform .1s ease;
+  }
+  .btn-secondary{
+    font-family:var(--font-display); font-weight:800; font-size:clamp(14px,2vw,17px);
+    color:var(--ink); background:var(--panel); border:2px solid var(--panel-edge); border-radius:999px; padding:1.8vh 5.5vw;
+    transition:transform .1s ease;
+  }
+  .btn-primary:active, .btn-secondary:active{ transform:scale(.96); }
+  .confetti-canvas{ position:fixed; inset:0; pointer-events:none; z-index:30; }
+
+  @media (max-width:560px){
+    .end-actions{ flex-direction:column; width:100%; }
+    .btn-primary, .btn-secondary{ width:100%; }
+    #task-compare{ gap:4vw; }
+  }
+</style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">🏔️ Zahlenberg</div>
+    <button class="sound-btn" id="btn-sound" aria-label="Ton an/aus">🔊</button>
+  </header>
+
+  <!-- START -->
+  <div class="screen" id="screen-start">
+    <h1 class="title-big">Zahlenberg</h1>
+    <p class="subtitle-big">Größer · kleiner · gleich bis 100</p>
+    <div class="start-scene" id="start-scene"></div>
+    <button class="start-btn" id="btn-play">▶ Start</button>
+    <p class="brand-footer">Förderfreude Games</p>
+  </div>
+
+  <!-- SPIEL -->
+  <div class="screen" id="screen-game" hidden>
+    <div class="progress-row">
+      <div class="progress-num">🏔️ <span id="progress-count">0</span> / 10</div>
+    </div>
+
+    <div class="task-wrap">
+      <div class="progress-mountain" id="progress-mountain">
+        <svg class="progress-mtn-bg" viewBox="0 0 60 320" preserveAspectRatio="none">
+          <path d="M30,10 L40,34 L34,48 L46,78 L38,108 L48,142 L36,176 L46,210 L34,244 L44,278 L58,318 L2,318 L16,282 L26,248 L14,214 L24,180 L12,146 L22,112 L10,80 L22,46 L16,32 Z" fill="var(--mtn-near)"/>
+          <path d="M30,10 L40,34 L34,48 L46,78 L38,108 L48,142 L36,176 L46,210 L34,244 L44,278 L58,318 L30,318 Z" fill="var(--mtn-near-dark)" opacity=".38"/>
+          <path d="M30,10 L40,34 L34,48 L26,44 L20,34 L16,32 Z" fill="var(--snow)"/>
+          <path d="M20,90 L24,130" stroke="var(--mtn-near-dark)" stroke-width="1.6" opacity=".28" stroke-linecap="round"/>
+          <path d="M36,160 L32,196" stroke="var(--mtn-near-dark)" stroke-width="1.6" opacity=".28" stroke-linecap="round"/>
+          <path d="M18,220 L22,256" stroke="var(--mtn-near-dark)" stroke-width="1.6" opacity=".25" stroke-linecap="round"/>
+        </svg>
+        <div class="summit-flag">🚩</div>
+        <div class="progress-stations" id="progress-stations"></div>
+        <div class="climber" id="climber">
+          <div class="climber-inner">
+            <svg viewBox="0 0 100 100">
+              <ellipse cx="50" cy="90" rx="16" ry="5" fill="rgba(60,45,20,.15)"/>
+              <path d="M34,60 L28,92 L40,92 L46,68 Z" fill="#5b432f"/>
+              <path d="M66,60 L72,92 L60,92 L54,68 Z" fill="#5b432f"/>
+              <path d="M30,38 Q50,28 70,38 L74,66 Q50,78 26,66 Z" fill="var(--flag)"/>
+              <rect x="20" y="42" width="10" height="20" rx="4" fill="var(--gold)"/>
+              <circle cx="50" cy="24" r="16" fill="#e8c39e"/>
+              <path d="M34,18 Q50,4 66,18 Q68,10 50,8 Q32,10 34,18 Z" fill="var(--blue)"/>
+              <circle cx="44" cy="24" r="2.4" fill="#2c1c0f"/>
+              <circle cx="56" cy="24" r="2.4" fill="#2c1c0f"/>
+              <path d="M44,30 Q50,33 56,30" stroke="#5b432f" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <path d="M30,44 L16,34" stroke="#e8c39e" stroke-width="6" stroke-linecap="round"/>
+              <path d="M70,44 L84,34" stroke="#e8c39e" stroke-width="6" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="task-stage" id="task-stage">
+        <div class="cloud" style="width:9%;height:6%;left:6%;top:6%;"></div>
+        <div class="cloud" style="width:6%;height:4%;left:12%;top:9%;"></div>
+        <div class="cloud" style="width:7%;height:4.5%;left:80%;top:5%;"></div>
+
+        <!-- SORTIER-AUFGABE -->
+        <div id="task-sort" hidden>
+          <div class="direction-icon" id="direction-icon"></div>
+
+          <div class="platform" id="platform-0" style="left:12%; bottom:4%;">
+            <div class="drop-zone" data-zone="slot-0"></div>
+            <div class="platform-ledge"></div>
+          </div>
+          <div class="platform" id="platform-1" style="left:38%; bottom:24%;">
+            <div class="drop-zone" data-zone="slot-1"></div>
+            <div class="platform-ledge"></div>
+          </div>
+          <div class="platform" id="platform-2" style="left:64%; bottom:44%;">
+            <div class="drop-zone" data-zone="slot-2"></div>
+            <div class="platform-ledge"></div>
+          </div>
+          <div class="platform" id="platform-3" style="left:88%; bottom:64%;">
+            <div class="drop-zone" data-zone="slot-3"></div>
+            <div class="platform-ledge"></div>
+          </div>
+
+          <div class="tray">
+            <div class="tray-zone" data-zone="tray-0"></div>
+            <div class="tray-zone" data-zone="tray-1"></div>
+            <div class="tray-zone" data-zone="tray-2"></div>
+            <div class="tray-zone" data-zone="tray-3"></div>
+          </div>
+
+          <div class="num-card" id="card-0" data-value="0">0</div>
+          <div class="num-card" id="card-1" data-value="0">0</div>
+          <div class="num-card" id="card-2" data-value="0">0</div>
+          <div class="num-card" id="card-3" data-value="0">0</div>
+        </div>
+
+        <!-- VERGLEICHS-AUFGABE -->
+        <div id="task-compare" hidden>
+          <div class="peak">
+            <div class="peak-shape">
+              <svg viewBox="0 0 100 90">
+                <path d="M50,5 L60,19 L56,27 L76,45 L94,86 L6,86 L24,48 L20,38 L38,22 Z" fill="var(--mtn-near)"/>
+                <path d="M50,5 L60,19 L56,27 L76,45 L94,86 L58,86 Z" fill="var(--mtn-near-dark)" opacity=".4"/>
+                <path d="M50,5 L60,19 L56,27 L48,25 L40,26 L38,22 Z" fill="var(--snow)"/>
+                <path d="M35,50 L41,80" stroke="var(--mtn-near-dark)" stroke-width="1.6" opacity=".3" stroke-linecap="round"/>
+                <path d="M64,54 L69,82" stroke="var(--mtn-near-dark)" stroke-width="1.6" opacity=".3" stroke-linecap="round"/>
+                <path d="M14,66 L18,84" stroke="var(--mtn-near-dark)" stroke-width="1.4" opacity=".25" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="flag-num" id="flag-left">47</div>
+          </div>
+          <div class="compare-symbols">
+            <button class="symbol-btn" id="sym-lt" data-sym="lt">&lt;</button>
+            <button class="symbol-btn" id="sym-eq" data-sym="eq">=</button>
+            <button class="symbol-btn" id="sym-gt" data-sym="gt">&gt;</button>
+          </div>
+          <div class="peak">
+            <div class="peak-shape">
+              <svg viewBox="0 0 100 90">
+                <path d="M50,5 L60,19 L56,27 L76,45 L94,86 L6,86 L24,48 L20,38 L38,22 Z" fill="var(--mtn-near)"/>
+                <path d="M50,5 L60,19 L56,27 L76,45 L94,86 L58,86 Z" fill="var(--mtn-near-dark)" opacity=".4"/>
+                <path d="M50,5 L60,19 L56,27 L48,25 L40,26 L38,22 Z" fill="var(--snow)"/>
+                <path d="M35,50 L41,80" stroke="var(--mtn-near-dark)" stroke-width="1.6" opacity=".3" stroke-linecap="round"/>
+                <path d="M64,54 L69,82" stroke="var(--mtn-near-dark)" stroke-width="1.6" opacity=".3" stroke-linecap="round"/>
+                <path d="M14,66 L18,84" stroke="var(--mtn-near-dark)" stroke-width="1.4" opacity=".25" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="flag-num" id="flag-right">74</div>
+          </div>
+        </div>
+
+        <div class="event-banner" id="event-banner">Super gemacht!</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ENDE -->
+  <div class="screen" id="screen-end" hidden>
+    <div class="end-emoji">🏔️</div>
+    <h2 class="end-title">Geschafft!</h2>
+    <p class="end-sub" id="end-sub">Der Gipfel ist erreicht!</p>
+    <div class="end-actions">
+      <button class="btn-primary" id="btn-again">Noch einmal</button>
+      <button class="btn-secondary" id="btn-home">Startseite</button>
+    </div>
+  </div>
+
+  <canvas class="confetti-canvas" id="confetti-canvas" hidden></canvas>
+
+<script>
+(function(){
+  "use strict";
+
+  const ROUND_TARGET = 10;
+  const state = {
+    soundOn:true,
+    progress:0,
+    taskType:null,        // 'sort' | 'compare'
+    sortDirection:null,   // 'asc' | 'desc'
+    sortNumbers:[],
+    sortSlots:[null,null,null,null],   // welche Kartenindex sitzt in Slot 0..3
+    sortTray:[0,1,2,3],                // welche Kartenindex sitzt in Tray 0..3 (null falls entfernt)
+    compareA:0, compareB:0, compareSym:'=',
+    usedSortKeys:new Set(),
+    usedComparePairs:new Set(),
+    locked:false,
+    drag:null
+  };
+
+  let pendingTimers = [];
+  function after(ms, fn){
+    const id = setTimeout(()=>{ pendingTimers = pendingTimers.filter(t=>t!==id); fn(); }, ms);
+    pendingTimers.push(id);
+    return id;
+  }
+  function clearPendingTimers(){
+    pendingTimers.forEach(id=>clearTimeout(id));
+    pendingTimers=[];
+  }
+
+  const els = {
+    screenStart: document.getElementById('screen-start'),
+    screenGame: document.getElementById('screen-game'),
+    screenEnd: document.getElementById('screen-end'),
+    btnPlay: document.getElementById('btn-play'),
+    btnSound: document.getElementById('btn-sound'),
+    btnAgain: document.getElementById('btn-again'),
+    btnHome: document.getElementById('btn-home'),
+    progressCount: document.getElementById('progress-count'),
+    progressStations: document.getElementById('progress-stations'),
+    taskStage: document.getElementById('task-stage'),
+    taskSort: document.getElementById('task-sort'),
+    taskCompare: document.getElementById('task-compare'),
+    directionIcon: document.getElementById('direction-icon'),
+    cards: [0,1,2,3].map(i=>document.getElementById('card-'+i)),
+    dropZones: Array.from(document.querySelectorAll('.drop-zone')),
+    trayZones: Array.from(document.querySelectorAll('.tray-zone')),
+    flagLeft: document.getElementById('flag-left'),
+    flagRight: document.getElementById('flag-right'),
+    symLt: document.getElementById('sym-lt'),
+    symEq: document.getElementById('sym-eq'),
+    symGt: document.getElementById('sym-gt'),
+    climber: document.getElementById('climber'),
+    eventBanner: document.getElementById('event-banner'),
+    endSub: document.getElementById('end-sub')
+  };
+
+  /* =========================================================
+     PROGRESS-ANZEIGE
+     ========================================================= */
+  const CLIMB_BASE = 6;   // Prozent von unten: Startposition (0 richtige Antworten)
+  const CLIMB_RANGE = 80; // Prozent-Spanne bis zur Gipfelposition (10 richtige Antworten)
+  function climbBottomPercent(steps){
+    return CLIMB_BASE + (steps/ROUND_TARGET)*CLIMB_RANGE;
+  }
+  function buildProgressStations(){
+    els.progressStations.innerHTML = '';
+    for(let i=0;i<ROUND_TARGET;i++){
+      const dot = document.createElement('div');
+      dot.className = 'progress-station-dot';
+      dot.style.bottom = climbBottomPercent(i+1) + '%';
+      els.progressStations.appendChild(dot);
+    }
+  }
+  function updateProgressUI(){
+    els.progressCount.textContent = state.progress;
+    const dots = els.progressStations.children;
+    for(let i=0;i<dots.length;i++){
+      dots[i].classList.toggle('done', i < state.progress);
+    }
+    // Bergsteiger klettert rein vertikal in seiner eigenen Spur — nie mehr über die Aufgabe hinweg
+    els.climber.style.bottom = climbBottomPercent(state.progress) + '%';
+  }
+
+  /* =========================================================
+     ZUFALLSHILFEN
+     ========================================================= */
+  function shuffle(arr){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+    return a;
+  }
+  function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+
+  /* =========================================================
+     AUFGABE ERZEUGEN
+     ========================================================= */
+  function pickFourNumbers(){
+    let guard = 0;
+    while(guard < 500){
+      guard++;
+      const nums = new Set();
+      while(nums.size < 4){
+        nums.add(randInt(0,100));
+      }
+      const arr = Array.from(nums);
+      const key = arr.slice().sort((a,b)=>a-b).join(',');
+      if(!state.usedSortKeys.has(key)){
+        state.usedSortKeys.add(key);
+        return arr;
+      }
+    }
+    // Falls der Pool erschöpft ist (sehr unwahrscheinlich): zurücksetzen
+    state.usedSortKeys.clear();
+    return pickFourNumbers();
+  }
+
+  function pickComparePair(){
+    let guard = 0;
+    while(guard < 500){
+      guard++;
+      let a, b;
+      if(Math.random() < 0.2){
+        a = randInt(0,100); b = a; // ~20% Gleich-Aufgaben
+      } else {
+        a = randInt(0,100); b = randInt(0,100);
+        if(a === b) continue;
+      }
+      const key = a+'-'+b;
+      if(!state.usedComparePairs.has(key)){
+        state.usedComparePairs.add(key);
+        return [a,b];
+      }
+    }
+    state.usedComparePairs.clear();
+    return pickComparePair();
+  }
+
+  function newTask(){
+    state.locked = false;
+    // Verhindert, dass Erfolgs-/Fehler-Zustaende von der vorherigen Sortieraufgabe
+    // haengen bleiben, falls als naechstes eine Vergleichsaufgabe kommt.
+    els.cards.forEach(c => c.classList.remove('wrong','correct-pulse','dragging'));
+    state.taskType = Math.random() < 0.5 ? 'sort' : 'compare';
+    if(state.taskType === 'sort'){
+      state.locked = true; // Sperre bis die Karten wirklich fertig positioniert UND gerendert sind
+      els.taskStage.dataset.settling = 'true';
+      setupSortTask(() => {
+        state.locked = false;
+        els.taskStage.dataset.settling = 'false';
+      });
+    } else {
+      setupCompareTask();
+      els.taskStage.dataset.settling = 'false';
+    }
+    els.taskSort.hidden = state.taskType !== 'sort';
+    els.taskCompare.hidden = state.taskType !== 'compare';
+  }
+
+  /* =========================================================
+     SORTIER-AUFGABE
+     ========================================================= */
+  function setupSortTask(onSettled){
+    state.sortDirection = Math.random() < 0.5 ? 'asc' : 'desc';
+    state.sortNumbers = pickFourNumbers();
+    state.sortSlots = [null,null,null,null];
+    state.sortTray = [0,1,2,3];
+
+    // Richtungsanzeige: vier Mini-Berge in wachsender bzw. schrumpfender Groesse —
+    // spiegelt direkt die vier Bergstationen darunter, sofort verstaendlich ohne Lesen.
+    const sizeOrder = state.sortDirection === 'asc' ? [1,2,3,4] : [4,3,2,1];
+    const mtnsHtml = sizeOrder.map(s => `<span class="dir-mtn s${s}">${mountainIconSvg()}</span>`).join('');
+    els.directionIcon.innerHTML = `${mtnsHtml}<span class="dir-arrow-big">➜</span>`;
+
+    const shuffledOrder = shuffle([0,1,2,3]);
+    els.cards.forEach((card, i) => {
+      const numIdx = shuffledOrder[i];
+      card.dataset.cardIdx = numIdx;
+      card.dataset.value = state.sortNumbers[numIdx];
+      card.textContent = state.sortNumbers[numIdx];
+      card.classList.remove('wrong','correct-pulse','dragging');
+      card.dataset.location = 'tray-' + i;
+    });
+    state.sortTray = shuffledOrder.slice();
+
+    // Positionierung + Freigabe strikt an den tatsaechlichen Render-Zyklus gekoppelt statt an
+    // eine geschaetzte feste Wartezeit: placeAllCards(true) im ersten rAF anwenden, dann NOCH
+    // zwei weitere rAFs abwarten, damit der Browser den Layout/Paint-Zyklus sicher abgeschlossen
+    // hat, bevor Interaktion erlaubt wird. Das verhindert zuverlaessig, dass der allererste
+    // Tap/Touch einer neuen Runde auf einen noch nicht vollstaendig gerenderten Zustand trifft.
+    requestAnimationFrame(() => {
+      placeAllCards(true);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if(onSettled) onSettled();
+        });
+      });
+    });
+  }
+
+  function mountainIconSvg(){
+    return '<svg viewBox="0 0 100 100" width="100%" height="100%"><path d="M50,10 L92,88 L8,88 Z" fill="var(--mtn-near)"/><path d="M50,10 L62,32 L38,32 Z" fill="var(--snow)"/></svg>';
+  }
+
+  function zoneCenter(zoneEl){
+    const stageRect = els.taskStage.getBoundingClientRect();
+    const r = zoneEl.getBoundingClientRect();
+    return {
+      left: r.left - stageRect.left + r.width/2,
+      top: r.top - stageRect.top + r.height/2,
+      w: r.width, h: r.height
+    };
+  }
+
+  function placeCardAt(card, zoneId){
+    const zoneEl = document.querySelector(`[data-zone="${zoneId}"]`);
+    if(!zoneEl) return;
+    const c = zoneCenter(zoneEl);
+    card.style.left = (c.left - c.w/2) + 'px';
+    card.style.top = (c.top - c.h/2) + 'px';
+    card.dataset.location = zoneId;
+    zoneEl.classList.toggle('filled', zoneId.startsWith('slot-'));
+  }
+
+  function placeAllCards(instant){
+    els.dropZones.forEach(z => z.classList.remove('filled'));
+    if(instant){
+      els.cards.forEach(card => { card.style.transition = 'none'; });
+    }
+    els.cards.forEach(card => {
+      placeCardAt(card, card.dataset.location);
+    });
+    if(instant){
+      // Erzwingt sofortiges Layout, damit die Positionen ohne Animation uebernommen werden,
+      // bevor die Transition wieder aktiviert wird.
+      void els.taskStage.offsetHeight;
+      els.cards.forEach(card => { card.style.transition = ''; });
+    }
+  }
+
+  /* ---- Pointer-basiertes Drag & Drop (funktioniert für Maus UND Touch) ---- */
+  let dragCtx = null;
+
+  function onCardPointerDown(e){
+    if(state.locked) return;
+    if(dragCtx) return; // bereits ein Drag aktiv
+    const card = e.currentTarget;
+    const rect = card.getBoundingClientRect();
+    dragCtx = {
+      card,
+      offsetX: e.clientX - rect.left,
+      offsetY: e.clientY - rect.top,
+      originalLocation: card.dataset.location
+    };
+    card.classList.add('dragging');
+    card.style.pointerEvents = 'none'; // damit elementFromPoint darunterliegende Zonen findet
+    moveCardTo(card, e.clientX, e.clientY);
+    // Sicherheitsnetz: falls aus irgendeinem Grund nie ein pointerup ankommt,
+    // darf das Spiel nie dauerhaft haengen bleiben.
+    after(4000, () => {
+      if(dragCtx && dragCtx.card === card){
+        card.style.pointerEvents = '';
+        card.classList.remove('dragging');
+        placeCardAt(card, dragCtx.originalLocation);
+        dragCtx = null;
+      }
+    });
+  }
+
+  function moveCardTo(card, clientX, clientY){
+    const stageRect = els.taskStage.getBoundingClientRect();
+    card.style.left = (clientX - stageRect.left - dragCtx.offsetX) + 'px';
+    card.style.top = (clientY - stageRect.top - dragCtx.offsetY) + 'px';
+  }
+
+  // Findet die Ablage-Zone, deren Mittelpunkt dem Loslasspunkt am naechsten ist
+  // (robuster als elementFromPoint, da unabhaengig von Overlay-/Ueberlappungsfragen).
+  function findClosestZone(clientX, clientY){
+    const allZones = els.dropZones.concat(els.trayZones);
+    let closest = null, closestDist = Infinity;
+    allZones.forEach(zone => {
+      const r = zone.getBoundingClientRect();
+      const cx = r.left + r.width/2, cy = r.top + r.height/2;
+      const dist = Math.hypot(clientX - cx, clientY - cy);
+      const maxRadius = Math.max(r.width, r.height) * 1.1;
+      if(dist <= maxRadius && dist < closestDist){
+        closestDist = dist;
+        closest = zone;
+      }
+    });
+    return closest;
+  }
+
+  function onPointerMove(e){
+    if(!dragCtx) return;
+    moveCardTo(dragCtx.card, e.clientX, e.clientY);
+  }
+
+  function onPointerUp(e){
+    if(!dragCtx) return;
+    const card = dragCtx.card;
+
+    const zoneEl = findClosestZone(e.clientX, e.clientY);
+
+    card.style.pointerEvents = '';
+    card.classList.remove('dragging');
+
+    if(zoneEl){
+      const targetZoneId = zoneEl.dataset.zone;
+      const occupant = els.cards.find(c => c !== card && c.dataset.location === targetZoneId);
+      if(occupant){
+        // Tausch: die andere Karte übernimmt die urspruengliche Position der gezogenen Karte
+        placeCardAt(occupant, dragCtx.originalLocation);
+      }
+      placeCardAt(card, targetZoneId);
+    } else {
+      // Kein gültiges Ziel: zurück zur ursprünglichen Position
+      placeCardAt(card, dragCtx.originalLocation);
+    }
+
+    dragCtx = null;
+    checkSortCompletion();
+  }
+
+  els.cards.forEach(card => {
+    card.addEventListener('pointerdown', onCardPointerDown);
+  });
+  document.addEventListener('pointermove', onPointerMove);
+  document.addEventListener('pointerup', onPointerUp);
+  document.addEventListener('pointercancel', onPointerUp);
+
+  function checkSortCompletion(){
+    if(state.locked) return;
+    const slotCards = [0,1,2,3].map(i => els.cards.find(c => c.dataset.location === 'slot-'+i));
+    if(slotCards.some(c => !c)) return; // noch nicht alle Plattformen belegt
+
+    const values = slotCards.map(c => parseInt(c.dataset.value,10));
+    const expected = values.slice().sort((a,b)=> state.sortDirection==='asc' ? a-b : b-a);
+    const isCorrect = values.every((v,i) => v === expected[i]);
+
+    if(isCorrect){
+      state.locked = true;
+      slotCards.forEach(c => c.classList.add('correct-pulse'));
+      sndCorrect();
+      after(500, () => registerSuccess());
+    } else {
+      // Herausfinden, welche Karten an der falschen Position stehen, und wackeln lassen
+      slotCards.forEach((c,i) => {
+        if(values[i] !== expected[i]){
+          c.classList.add('wrong');
+          after(420, ()=> c.classList.remove('wrong'));
+        }
+      });
+      sndWrong();
+    }
+  }
+
+  /* =========================================================
+     VERGLEICHS-AUFGABE
+     ========================================================= */
+  function setupCompareTask(){
+    const [a,b] = pickComparePair();
+    state.compareA = a; state.compareB = b;
+    state.compareSym = a<b ? '<' : (a>b ? '>' : '=');
+    els.flagLeft.textContent = a;
+    els.flagRight.textContent = b;
+    [els.symLt, els.symEq, els.symGt].forEach(btn => btn.classList.remove('wrong','correct-pulse'));
+  }
+
+  function onSymbolClick(btn){
+    if(state.locked) return;
+    const chosen = btn.dataset.sym === 'lt' ? '<' : (btn.dataset.sym === 'gt' ? '>' : '=');
+    if(chosen === state.compareSym){
+      state.locked = true;
+      btn.classList.add('correct-pulse');
+      sndCorrect();
+      after(500, () => registerSuccess());
+    } else {
+      btn.classList.add('wrong');
+      sndWrong();
+      after(420, ()=> btn.classList.remove('wrong'));
+    }
+  }
+  els.symLt.addEventListener('click', () => onSymbolClick(els.symLt));
+  els.symEq.addEventListener('click', () => onSymbolClick(els.symEq));
+  els.symGt.addEventListener('click', () => onSymbolClick(els.symGt));
+
+  /* =========================================================
+     FORTSCHRITT
+     ========================================================= */
+  function registerSuccess(){
+    state.progress = Math.min(ROUND_TARGET, state.progress + 1);
+    updateProgressUI();
+    els.climber.classList.add('cheer');
+    after(500, ()=> els.climber.classList.remove('cheer'));
+    if(state.progress >= ROUND_TARGET){
+      after(600, endGame);
+    } else {
+      after(650, newTask);
+    }
+  }
+
+  /* =========================================================
+     START / ENDE
+     ========================================================= */
+  function startGame(){
+    clearPendingTimers();
+    state.progress = 0;
+    state.usedSortKeys = new Set();
+    state.usedComparePairs = new Set();
+    state.locked = false;
+
+    els.screenStart.hidden = true;
+    els.screenEnd.hidden = true;
+    els.screenGame.hidden = false;
+
+    buildProgressStations();
+    updateProgressUI();
+    newTask();
+  }
+
+  function endGame(){
+    clearPendingTimers();
+    els.screenGame.hidden = true;
+    els.screenEnd.hidden = false;
+    els.endSub.textContent = 'Der Gipfel ist erreicht!';
+    sndWin();
+    runConfetti();
+  }
+
+  els.btnPlay.addEventListener('click', () => { ensureAudio(); startGame(); });
+  els.btnAgain.addEventListener('click', () => { els.screenEnd.hidden = true; startGame(); });
+  els.btnHome.addEventListener('click', () => {
+    clearPendingTimers();
+    els.screenEnd.hidden = true;
+    els.screenGame.hidden = true;
+    els.screenStart.hidden = false;
+  });
+  els.btnSound.addEventListener('click', () => {
+    state.soundOn = !state.soundOn;
+    els.btnSound.textContent = state.soundOn ? '🔊' : '🔇';
+  });
+
+  /* =========================================================
+     SOUND
+     ========================================================= */
+  let actx = null;
+  function ensureAudio(){ if(!actx){ actx = new (window.AudioContext||window.webkitAudioContext)(); } }
+  function tone(freq, dur, type, gainPeak, delay){
+    if(!state.soundOn) return;
+    try{
+      if(!actx) return;
+      const t0 = actx.currentTime + (delay||0);
+      const osc = actx.createOscillator();
+      const gain = actx.createGain();
+      osc.type = type||'sine';
+      osc.frequency.setValueAtTime(freq, t0);
+      gain.gain.setValueAtTime(0, t0);
+      gain.gain.linearRampToValueAtTime(gainPeak||0.14, t0+0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0+dur);
+      osc.connect(gain).connect(actx.destination);
+      osc.start(t0); osc.stop(t0+dur+0.03);
+    }catch(err){}
+  }
+  function sndCorrect(){ tone(600,0.1,'triangle',0.15); tone(880,0.16,'triangle',0.13,0.08); }
+  function sndWrong(){ tone(220,0.15,'sine',0.08); }
+  function sndWin(){ [523,659,784,1046,1318].forEach((f,i)=>tone(f,0.3,'triangle',0.13,i*0.11)); }
+
+  /* =========================================================
+     KONFETTI
+     ========================================================= */
+  function runConfetti(){
+    const canvas = document.getElementById('confetti-canvas');
+    canvas.hidden = false;
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    const colors = ['#3d6b4f', '#d8492f', '#e8a33d', '#3a7ca5', '#ffffff'];
+    const pieces = Array.from({length:130}, () => ({
+      x: Math.random()*canvas.width, y:-20-Math.random()*canvas.height*0.5,
+      w:4+Math.random()*6, h:6+Math.random()*10,
+      vy:2+Math.random()*3, vx:-1+Math.random()*2,
+      rot:Math.random()*360, vr:-6+Math.random()*12,
+      color: colors[Math.floor(Math.random()*colors.length)]
+    }));
+    let frames = 0;
+    function loop(){
+      frames++;
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      pieces.forEach(p=>{
+        p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr;
+        ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot*Math.PI/180);
+        ctx.fillStyle=p.color; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+        ctx.restore();
+      });
+      if(frames<220) requestAnimationFrame(loop);
+      else { ctx.clearRect(0,0,canvas.width,canvas.height); canvas.hidden = true; }
+    }
+    loop();
+  }
+
+  /* =========================================================
+     RESIZE: Karten bei Layout-Änderungen neu ausrichten
+     ========================================================= */
+  window.addEventListener('resize', () => {
+    if(state.taskType === 'sort' && !els.taskSort.hidden) placeAllCards(true);
+  });
+  window.addEventListener('orientationchange', () => setTimeout(() => {
+    if(state.taskType === 'sort' && !els.taskSort.hidden) placeAllCards(true);
+  }, 60));
+
+  /* =========================================================
+     STARTSZENE (kleine dekorative Berglandschaft)
+     ========================================================= */
+  document.getElementById('start-scene').innerHTML = `
+    <svg viewBox="0 0 560 220" width="100%" height="100%" style="display:block;overflow:visible;">
+      <path d="M110,60 L122,78 L116,88 L136,104 L200,220 L0,220 L64,104 L84,88 L78,78 Z" fill="var(--mtn-far)"/>
+      <path d="M110,60 L122,78 L116,88 L136,104 L200,220 L120,220 Z" fill="#000" opacity=".12"/>
+      <path d="M110,60 L122,78 L116,88 L110,84 L104,88 L98,78 Z" fill="var(--snow)"/>
+      <path d="M280,20 L296,42 L288,54 L316,84 L410,220 L150,220 L244,84 L272,54 L264,42 Z" fill="var(--mtn-near)"/>
+      <path d="M280,20 L296,42 L288,54 L316,84 L410,220 L320,220 Z" fill="var(--mtn-near-dark)" opacity=".4"/>
+      <path d="M280,20 L296,42 L288,54 L280,50 L272,54 L264,42 Z" fill="var(--snow)"/>
+      <path d="M266,110 L274,160" stroke="var(--mtn-near-dark)" stroke-width="3" opacity=".25" stroke-linecap="round"/>
+      <path d="M440,90 L450,106 L444,114 L460,132 L560,220 L330,220 L430,132 L446,114 L440,106 Z" fill="var(--mtn-far)"/>
+      <path d="M440,90 L450,106 L444,114 L460,132 L560,220 L450,220 Z" fill="#000" opacity=".12"/>
+      <path d="M440,90 L450,106 L444,114 L440,110 L436,114 L430,106 Z" fill="var(--snow)"/>
+      <g transform="translate(232,100) scale(1.1)">
+        <path d="M34,60 L28,92 L40,92 L46,68 Z" fill="#5b432f"/>
+        <path d="M66,60 L72,92 L60,92 L54,68 Z" fill="#5b432f"/>
+        <path d="M30,38 Q50,28 70,38 L74,66 Q50,78 26,66 Z" fill="var(--flag)"/>
+        <rect x="20" y="42" width="10" height="20" rx="4" fill="var(--gold)"/>
+        <circle cx="50" cy="24" r="16" fill="#e8c39e"/>
+        <path d="M34,18 Q50,4 66,18 Q68,10 50,8 Q32,10 34,18 Z" fill="var(--blue)"/>
+        <circle cx="44" cy="24" r="2.4" fill="#2c1c0f"/>
+        <circle cx="56" cy="24" r="2.4" fill="#2c1c0f"/>
+      </g>
+    </svg>
+  `;
+
+})();
+</script>
+
+</body>
+</html>
