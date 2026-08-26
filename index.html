@@ -69,7 +69,10 @@
   .brand-footer{ font-size:clamp(10px,1.3vw,12px); color:var(--muted); font-weight:700; margin-top:.5vh; }
 
   /* ---------- Spiel ---------- */
-  #screen-game{ width:100%; gap:0.6vh; padding:0 3vw; }
+  #screen-game{
+    width:100%; gap:0.6vh; padding:0 3vw;
+    padding-bottom:max(4%, 76px); /* Sicherheitsabstand: haelt Hosting-Badges (z.B. "Powered by Netlify" unten rechts) fern */
+  }
   .progress-row{ display:flex; align-items:center; gap:2vw; }
   .progress-num{ font-family:var(--font-display); font-weight:800; font-size:clamp(14px,2vw,19px); color:var(--mtn-near-dark); display:flex; align-items:center; gap:.6vw; }
 
@@ -139,8 +142,9 @@
   @keyframes zoneFlash{ 0%,100%{ border-color:rgba(60,45,20,.28); } 50%{ border-color:var(--alert); } }
 
   .tray{
-    position:absolute; left:0; right:0; bottom:2%;
+    position:absolute; left:0; right:0; bottom:max(2%, 54px);
     display:flex; justify-content:center; gap:3.4vw;
+    padding:0 max(3vw, 78px);
     pointer-events:none;
   }
   .tray-zone{
